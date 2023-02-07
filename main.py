@@ -43,8 +43,10 @@ def calculate_fee(locker):
 
 @app.put("/reserve/{locker_id}/{std_id}")
 def reserve_locker(locker_id: int, std_id: int, items: list = Body(), reserve_time: int = Body()):
-    if not is_available(locker_id) or len(items) == 0:
-        raise HTTPException(400)
+    if not (0 < locker_id < 7) or reserve_time <= 0  or len(items) == 0:
+        raise HTTPException(400, detail="invalid values")
+    if not is_available(locker_id):
+        raise HTTPException(400, detail="locker unavailable")
 
     collection.update_one({"locker_id": locker_id},
                           {"$set": {"status": UNAVAILABLE,
@@ -52,13 +54,14 @@ def reserve_locker(locker_id: int, std_id: int, items: list = Body(), reserve_ti
                                     "std_id": std_id,
                                     "items": items,
                                     "reserve_time": reserve_time}})
+    return {"message": "success"}
 
 
 @app.get("/check_out/{locker_id}/{std_id}")
 def check_out_locker(locker_id: int, std_id: int):
     result = list(collection.find({"locker_id": locker_id, "std_id": std_id}))
     if len(result) == 0:
-        raise HTTPException(404)
+        raise HTTPException(404, detail="not matching lockers and student id")
     locker = result[0]
 
     penalty_fee, reserve_fee = calculate_fee(locker)
@@ -71,7 +74,7 @@ def check_out_locker(locker_id: int, std_id: int):
 def pay_locker_fee(locker_id: int, std_id: int, paid: dict = Body()):
     result = list(collection.find({"locker_id": locker_id, "std_id": std_id}))
     if len(result) == 0:
-        raise HTTPException(404)
+        raise HTTPException(404, detail="not matching lockers and student id")
     locker = result[0]
     penalty_fee, reserve_fee = calculate_fee(locker)
 
