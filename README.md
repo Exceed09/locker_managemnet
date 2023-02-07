@@ -1,9 +1,9 @@
 ## Requirements
 
-### /reserve/{locker_id}
+### /reserve/{locker_id}/{std_id}
 Reserve a locker
 
-### /check_out/{locker_id}
+### /check_out/{locker_id}/{std_id}
 Get things out of locker
 
 ### /check_out/{locker_id}/pay
