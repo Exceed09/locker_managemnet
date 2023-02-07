@@ -29,7 +29,19 @@ def is_available(locker_id: int):
     return list(collection.find({"locker_id": locker_id}))[0]['status'] == AVAILABLE
 
 
-@app.post("/reserve/{locker_id}/{std_id}")
+def calculate_fee(locker):
+    penalty_fee = 0
+    overtime = (locker['datetime_in'] + (3600 * locker['reserve_time']) - datetime.timestamp(datetime.now())) / 60
+    if overtime < 0:
+        penalty_fee += round(abs(overtime) / 10, 0) * 20
+    reserve_fee = 0
+    check_hour = locker['reserve_time'] - 2
+    if check_hour > 0:
+        reserve_fee += check_hour * 5
+    return penalty_fee, reserve_fee
+
+
+@app.put("/reserve/{locker_id}/{std_id}")
 def reserve_locker(locker_id: int, std_id: int, items: list = Body(), reserve_time: int = Body()):
     if not is_available(locker_id):
         raise HTTPException(400)
@@ -41,14 +53,37 @@ def reserve_locker(locker_id: int, std_id: int, items: list = Body(), reserve_ti
                                     "reserve_time": reserve_time}})
 
 
-@app.put("/check_out/{locker_id}/{std_id}")
+@app.get("/check_out/{locker_id}/{std_id}")
 def check_out_locker(locker_id: int, std_id: int):
-    pass
+    result = list(collection.find({"locker_id": locker_id, "std_id": std_id}))
+    if len(result) == 0:
+        raise HTTPException(404)
+    locker = result[0]
+
+    penalty_fee, reserve_fee = calculate_fee(locker)
+
+    return {"total_fee": reserve_fee + penalty_fee, "reserve_fee": reserve_fee, "penalty_fee": penalty_fee,
+            "reserve_time": locker['reserve_time']}
 
 
-@app.post("/check_out/{locker_id}/pay")
-def pay_locker_fee(locker_id: int):
-    pass
+@app.put("/check_out/{locker_id}/{std_id}/pay")
+def pay_locker_fee(locker_id: int, std_id: int, paid: dict = Body()):
+    result = list(collection.find({"locker_id": locker_id, "std_id": std_id}))
+    if len(result) == 0:
+        raise HTTPException(404)
+    locker = result[0]
+    penalty_fee, reserve_fee = calculate_fee(locker)
+
+    if penalty_fee + reserve_fee > paid['paid']:
+        raise HTTPException(400)
+
+    collection.update_one({"locker_id": locker_id},
+                          {"$set": {"status": AVAILABLE,
+                                    "datetime_in": 0,
+                                    "std_id": 0,
+                                    "items": [],
+                                    "reserve_time": 0}})
+    return {"change": paid['paid'] - penalty_fee + reserve_fee}
 
 
 @app.get("/lockers")
