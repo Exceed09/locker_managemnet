@@ -1,13 +1,13 @@
 ## Requirements
 
 ### /reserve/{locker_id}/{std_id}
-Reserve a locker
+Reserve an available locker.
 
 ### /check_out/{locker_id}/{std_id}
-Get things out of locker
+Get fees of using locker service.
 
-### /check_out/{locker_id}/pay
+### /check_out/{locker_id}/{std_id}/pay
 If there are fees, get input money from user.
 
 ### /lockers/
-See availability of lockers
+See availability of all lockers.
