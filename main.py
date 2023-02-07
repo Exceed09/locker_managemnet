@@ -43,8 +43,9 @@ def calculate_fee(locker):
 
 @app.put("/reserve/{locker_id}/{std_id}")
 def reserve_locker(locker_id: int, std_id: int, items: list = Body(), reserve_time: int = Body()):
-    if not is_available(locker_id):
+    if not is_available(locker_id) or len(items) == 0:
         raise HTTPException(400)
+
     collection.update_one({"locker_id": locker_id},
                           {"$set": {"status": UNAVAILABLE,
                                     "datetime_in": datetime.timestamp(datetime.now()),
