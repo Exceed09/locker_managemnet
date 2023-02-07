@@ -84,7 +84,7 @@ def pay_locker_fee(locker_id: int, std_id: int, paid: dict = Body()):
                                     "std_id": 0,
                                     "items": [],
                                     "reserve_time": 0}})
-    return {"change": paid['paid'] - penalty_fee + reserve_fee}
+    return {"change": paid['paid'] - penalty_fee + reserve_fee, "items": locker["items"]}
 
 
 @app.get("/lockers")
