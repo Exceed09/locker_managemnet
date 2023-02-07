@@ -79,7 +79,7 @@ def pay_locker_fee(locker_id: int, std_id: int, paid: dict = Body()):
     penalty_fee, reserve_fee = calculate_fee(locker)
 
     if penalty_fee + reserve_fee > paid['paid']:
-        raise HTTPException(400)
+        raise HTTPException(400, detail="not enough money inputted")
 
     collection.update_one({"locker_id": locker_id},
                           {"$set": {"status": AVAILABLE,
